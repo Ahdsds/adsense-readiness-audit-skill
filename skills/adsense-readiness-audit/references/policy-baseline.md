@@ -39,8 +39,9 @@
 | C02 | Q/R | 页面应有完整句子和段落；不应主要是图片、视频、标题、导航、提醒或广告，也不能是建设中、空模板或低价值页面。 | “内容量近似值”只用于抽样，不是阈值。 |
 | C03 | R | 不得在没有实质评论、策展或增量价值时复制、轻改、抓取或嵌入他人内容；同时遵守版权。 | 嵌入视频、图片或聚合信息必须有显著原创增量。 |
 | C04 | Q/R | 不在自动生成、几乎无原创内容的页面放广告；联盟内容若无额外功能或价值，只能是站点很小的一部分。 | 检查批量模板页、参数页、门页和关键词变体。 |
-| C05 | R | 不在违反 Google 网页搜索垃圾政策的页面展示 Google 广告。 | 特别检查伪装、门页、规模化低价值内容、抓取和站点声誉滥用等当前规则。 |
+| C05 | R | 不在违反 Google 网页搜索垃圾政策的页面展示 Google 广告。 | 特别检查伪装、门页、过期域名滥用、被黑内容、规模化低价值内容、抓取和站点声誉滥用等当前规则。 |
 | C06 | R | 不得让广告或付费推广材料多于发布者内容。 | 适用于实际广告布局；申请前也可审查预留位和第三方广告。 |
+| C07 | Q/R | 域名历史不是独立年龄门槛；但旧垃圾路径、被黑内容、恶意跳转或以操纵排名为主要目的的低价值过期域名再利用，会分别落入安全、体验或搜索垃圾政策。 | 按 [domain-history.md](domain-history.md) 建立时间线并映射当前证据，不因换过主题或购买二手域名单独定罪。 |
 
 ## 四、导航与用户体验
 
@@ -116,6 +117,8 @@ About、Contact 和 Terms 页面不是所有站点都被官方明文列为必须
 
 AI 辅助创作、WordPress 或其他 CMS、免费主题、同时使用其他广告网络本身都不等于不合格；实际内容、实现和政策合规才是判断对象。
 
+域名旧、域名新、当前 RDAP 注册日期较近、使用隐私保护、历史上换过主题或曾被其他主体使用，也不是 Google 公布的独立 AdSense 拒审门槛。只有当历史检查发现当前仍存在的违规、安全、抓取、所有权、内容价值或用户体验问题时，才按对应政策判级。
+
 ## 十、官方来源索引
 
 审计时优先打开与发现项直接对应的页面：
@@ -123,6 +126,8 @@ AI 辅助创作、WordPress 或其他 CMS、免费主题、同时使用其他广
 - [Eligibility requirements for AdSense](https://support.google.com/adsense/answer/9724?hl=en)
 - [Owning the site you want to use to participate in AdSense](https://support.google.com/adsense/answer/91205?hl=en)
 - [What to do when your site is not ready to show ads](https://support.google.com/adsense/answer/12176698?hl=en)
+- [AdSense site management](https://support.google.com/adsense/answer/12131223?hl=en)
+- [Fix AdSense crawler issues](https://support.google.com/adsense/answer/2381908?hl=en)
 - [Google AdSense content and user experience](https://support.google.com/adsense/answer/10015918?hl=en)
 - [Your AdSense account wasn't approved](https://support.google.com/adsense/answer/81904?hl=en)
 - [AdSense Program policies](https://support.google.com/adsense/answer/48182?hl=en)
@@ -135,5 +140,8 @@ AI 辅助创作、WordPress 或其他 CMS、免费主题、同时使用其他广
 - [Ads.txt guide](https://support.google.com/adsense/answer/12171612?hl=en)
 - [AdSense policy change log](https://support.google.com/adsense/answer/9336650?hl=en)
 - [Google Publisher Standards change log](https://support.google.com/publisherpolicies/answer/10852414?hl=en)
+- [Spam Policies for Google Web Search](https://developers.google.com/search/docs/essentials/spam-policies)
+- [Manual actions report](https://support.google.com/webmasters/answer/9044175?hl=en)
+- [Google Safe Browsing Site Status](https://transparencyreport.google.com/safe-browsing/search)
 
 引用时链接到支持具体发现的页面，不要只链接变更日志或本文件。

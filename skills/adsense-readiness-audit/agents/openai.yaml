@@ -1,4 +1,4 @@
 interface:
   display_name: "AdSense 审核准备度审计"
-  short_description: "依据 Google 官方政策检查网站的 AdSense 审核准备度"
-  default_prompt: "使用 $adsense-readiness-audit 审计我的网站，并按阻塞项优先级给出整改清单。"
+  short_description: "检查域名历史与所有 AdSense 审核阻塞因素"
+  default_prompt: "使用 $adsense-readiness-audit 审计我的网站，说明域名以前做什么，并按证据列出全部审核阻塞项和整改顺序。"

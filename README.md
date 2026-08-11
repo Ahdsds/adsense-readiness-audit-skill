@@ -2,7 +2,7 @@
 
 一个面向 Codex 的公开 Skill，用 Google 官方资料审计内容型网站的 AdSense 申请与站点审核准备度。
 
-它会先回答“这个域名以前做什么”，再检查旧站残留、安全信誉、账户资格、站点所有权与可抓取性、原创和低价值内容、导航与用户体验、Google Publisher Policies、流量、隐私披露、区域同意要求及 `ads.txt`，最后输出带证据的完整阻塞项登记表。
+它会先回答“这个域名以前做什么”，再检查 Cloudflare/CDN/WAF、旧站残留、安全信誉、账户资格、站点所有权与可抓取性、原创和低价值内容、导航与用户体验、Google Publisher Policies、流量、隐私披露、区域同意要求及 `ads.txt`，最后输出带证据的完整阻塞项登记表。
 
 > [!IMPORTANT]
 > 这是非官方社区项目，与 Google 没有隶属或合作关系。审计结果不是批准保证，也不构成法律意见。Google 政策可能随时更新；正式审计应重新打开相关官方页面核对。
@@ -13,6 +13,7 @@
 - 用 Internet Archive 历史快照、RDAP、DNS、TLS 和跳转证据建立域名前身用途时间线。
 - 先识别 IANA 保留/特殊用途域名；对不可注册、不可转让或不能由申请人控制的域名快速判定所有权阻塞。
 - 排查旧垃圾路径、被黑内容、恶意软件、伪装、意外跳转、Search Console 手动处置和过期域名滥用风险。
+- 检测 Cloudflare 响应头、Challenge Page、`520`–`526`、缓存和 robots 线索，并指导复核 WAF/Bots、Access、SSL/TLS、Workers/Redirects 与真实 Google 爬虫事件。
 - 诊断 “site not ready”、低价值内容、导航问题等拒审原因。
 - 区分明确政策要求、官方质量信号、区域条件项和一般优化建议。
 - 避免把固定文章数、字数、流量或域名年龄传言当成官方硬门槛。
@@ -79,7 +80,7 @@ $adsense-readiness-audit
 
 ## 技术探测脚本
 
-Skill 可以调用内置脚本采集可达性、HTTPS、`robots.txt`、`ads.txt`、页面标题、语言、近似正文量、站内链接、常见信任页入口和 AdSense 代码信号：
+Skill 可以调用内置脚本采集可达性、HTTPS、`robots.txt`、`ads.txt`、页面标题、语言、近似正文量、站内链接、常见信任页入口、AdSense 代码，以及 Cloudflare 响应头、挑战和 `520`–`526` 信号：
 
 ```bash
 python skills/adsense-readiness-audit/scripts/site_probe.py https://example.com --max-pages 30 --format markdown
@@ -101,7 +102,8 @@ skills/adsense-readiness-audit/
 ├── agents/openai.yaml
 ├── references/
 │   ├── policy-baseline.md
-│   └── domain-history.md
+│   ├── domain-history.md
+│   └── cloudflare-cdn.md
 └── scripts/
     ├── site_probe.py
     └── domain_history_probe.py
@@ -125,6 +127,10 @@ skills/adsense-readiness-audit/
 - [Wayback Machine general information](https://archivesupport.zendesk.com/hc/en-us/articles/360004716091-Wayback-Machine-General-Information)
 - [IANA Example Domains](https://www.iana.org/help/example-domains)
 - [IANA Special-Use Domain Names](https://www.iana.org/assignments/special-use-domain-names/special-use-domain-names.xhtml)
+- [About the AdSense ads crawler](https://support.google.com/adsense/answer/99376?hl=en)
+- [Fix AdSense crawler issues](https://support.google.com/adsense/answer/2381908?hl=en)
+- [Cloudflare: Detect a Challenge Page response](https://developers.cloudflare.com/cloudflare-challenges/challenge-types/challenge-pages/detect-response/)
+- [Cloudflare 5xx errors](https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/)
 
 提交政策更新 PR 时，请提供对应的 Google 官方链接，并明确区分强制要求、质量信号、条件要求和经验建议。
 

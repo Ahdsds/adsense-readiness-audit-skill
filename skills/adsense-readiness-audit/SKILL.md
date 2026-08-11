@@ -1,6 +1,6 @@
 ---
 name: adsense-readiness-audit
-description: 依据 Google 官方资料审计内容型网站的 AdSense 申请与站点审核准备度，检查域名历史和前身用途、旧站残留与安全信誉、账户资格、所有权与可抓取性、原创和低价值内容、导航、发布商政策、流量、隐私与区域同意，并输出完整阻塞项登记表。用于用户询问 AdSense 审核要求、申请前检查、域名前世今生、网站未准备好、低价值内容、拒审原因、重新送审、Policy Center 问题或要求检查某个网站能否申请 AdSense；不用于 YouTube 合作伙伴计划的频道资格评估。
+description: 依据 Google 官方资料审计内容型网站的 AdSense 申请与站点审核准备度，检查域名历史和前身用途、Cloudflare/CDN/WAF 配置、旧站残留与安全信誉、账户资格、所有权与可抓取性、原创和低价值内容、导航、发布商政策、流量、隐私与区域同意，并输出完整阻塞项登记表。用于用户询问 AdSense 审核要求、申请前检查、域名前世今生、Cloudflare 托管或拦截、网站未准备好、低价值内容、拒审原因、重新送审、Policy Center 问题或要求检查某个网站能否申请 AdSense；不用于 YouTube 合作伙伴计划的频道资格评估。
 ---
 
 # AdSense 审核准备度审计
@@ -12,10 +12,11 @@ description: 依据 Google 官方资料审计内容型网站的 AdSense 申请�
 ## 开始前
 
 1. 完整读取 [references/policy-baseline.md](references/policy-baseline.md) 和 [references/domain-history.md](references/domain-history.md)。
-2. 确认任务属于以下哪一种：申请前体检、拒审诊断、重新送审检查、Policy Center 合规排查、域名历史专项检查。
-3. 收集站点 URL；若已有拒审邮件、站点状态、Policy Center 文案或截图，一并使用。不要因缺少后台信息而停止公开站点审计，将账户侧项目标为“未知”。
-4. 确认审计对象是普通内容网站。若是 YouTube、Blogger 或其他 host partner，说明其申请流程不同，只审计仍适用的发布商政策。
-5. 先在 IANA 保留域名和 Special-Use Domain Names 中核对目标。若域名不可注册/转让、不是公网生产域名或用户不可能控制，直接将所有权/用途判为 P0，仍给出简短历史和现场证据，但停止没有价值的深度内容审计。
+2. 若用户说明使用 Cloudflare，或 DNS/响应头/页面显示 Cloudflare、CDN、WAF、挑战或 `520`–`526`，完整读取 [references/cloudflare-cdn.md](references/cloudflare-cdn.md)。
+3. 确认任务属于以下哪一种：申请前体检、拒审诊断、重新送审检查、Policy Center 合规排查、域名历史专项检查。
+4. 收集站点 URL；若已有拒审邮件、站点状态、Policy Center 文案或截图，一并使用。不要因缺少后台信息而停止公开站点审计，将账户侧项目标为“未知”。
+5. 确认审计对象是普通内容网站。若是 YouTube、Blogger 或其他 host partner，说明其申请流程不同，只审计仍适用的发布商政策。
+6. 先在 IANA 保留域名和 Special-Use Domain Names 中核对目标。若域名不可注册/转让、不是公网生产域名或用户不可能控制，直接将所有权/用途判为 P0，仍给出简短历史和现场证据，但停止没有价值的深度内容审计。
 
 ## 保持政策新鲜度
 
@@ -46,7 +47,9 @@ python scripts/site_probe.py https://example.com --max-pages 30 --format markdow
 
 先用 `python --version` 预检解释器；若命令指向 Microsoft Store 占位符或不可用，依次尝试 `py -3`、`python3`、工作区提供的 Python 绝对路径。仍不可用时不要停止审计，改用浏览器和 HTTP/DNS/RDAP/Wayback 页面手工完成同一证据清单，并在覆盖范围中记录“脚本未运行”。
 
-将脚本输出只视为技术证据。它能探测可达性、重定向、robots.txt、ads.txt、AdSense 代码、页面标题、语言、近似正文量、站内链接和常见信任页入口；它不能判断原创性、版权、内容真实性、合法性或最终审核结果。
+将脚本输出只视为技术证据。它能探测可达性、重定向、robots.txt、ads.txt、AdSense 代码、页面标题、语言、近似正文量、站内链接、常见信任页入口，以及 Cloudflare 响应头、Challenge Page 和 `520`–`526` 线索；它不能判断原创性、版权、内容真实性、合法性或最终审核结果。
+
+若发现或已知使用 Cloudflare，按 `references/cloudflare-cdn.md` 补查裸域/`www`、HTTP/HTTPS、代表页、`robots.txt`、`ads.txt`、验证页、Cloudflare Security Events/Logs、SSL/TLS、WAF/Bots、Access、Workers/Redirects 和缓存。不要把模拟 Google User-Agent 的结果当成真实爬虫证据；优先使用 AdSense 后台、Cloudflare 事件和源站日志中的实际请求。
 
 对于依赖 JavaScript、Cookie 同意、地理位置、登录状态或交互的页面，使用浏览器补查桌面端和移动端。不要把脚本未发现某元素直接当作元素不存在。
 
@@ -89,7 +92,7 @@ python scripts/domain_history_probe.py example.com --wayback-snapshots 4 --forma
 
 1. 账户资格：年龄、重复账户、历史停用、身份/付款信息、支持语言、制裁或产品适用性。
 2. 域名所有权：正确域名、HTML 控制权、AdSense 代码/meta、Search Console 或 ads.txt 验证、站点在账户中的状态。
-3. 上线与抓取：DNS、状态码、登录墙、robots、WAF/CDN、地域/IP 限制、SSL、重定向和 JavaScript 渲染。
+3. 上线与抓取：DNS、状态码、登录墙、robots、Cloudflare/CDN/WAF、Challenge、`520`–`526`、Bot/Access/地域/IP 限制、SSL、缓存、Workers/重定向和 JavaScript 渲染。
 4. 域名历史：前身用途、过期域名滥用、旧垃圾路径/子域、用途和主机冲突。
 5. 安全信誉：Safe Browsing、Search Console 安全问题、恶意软件、被黑内容、伪装、社会工程和意外跳转。
 6. 搜索垃圾：规模化低价值、抓取、门页、薄联盟、关键词/隐藏文本、链接垃圾、站点声誉滥用和 UGC 垃圾。
@@ -132,12 +135,13 @@ python scripts/domain_history_probe.py example.com --wayback-snapshots 4 --forma
 
 1. **结论**：总体判断、最关键的 1–3 个理由、非批准保证。
 2. **覆盖范围**：检查方式、URL/模板数量、账户侧资料、历史来源、未覆盖项和日期。
-3. **域名前身用途时间线**：`时间/区间 | 来源 | 当时标题/用途 | 变化 | 置信度 | 与当前风险的关系`；无可靠快照时明确写“无法核实”。
-4. **完整阻塞项登记表**：列出上述十四个通道，使用 `已证实阻塞 / 高风险 / 条件项 / 未发现 / 无法从公开面核实 / 不适用`，并给出证据。`未发现`不等于 Google 已确认通过。
-5. **发现表**：`级别 | 性质（官方要求/官方质量信号/条件项/经验建议） | 问题 | 现场证据 | 官方依据 | 修复动作 | 复验方法`。
-6. **优先整改清单**：按依赖关系给出最短可执行顺序；先 P0，再 P1。
-7. **送审前复验**：列出能明确验证完成的检查，不重复整份报告。
-8. **仍需用户确认**：只列后台、账户、流量来源或地域覆盖等无法从公开站点证明的事项。
+3. **Cloudflare/CDN 证据**：仅在检测到或用户声明使用时输出，列出检测线索、挑战/错误 URL、DNS/TLS/重定向/缓存结果、实际爬虫后台证据和未覆盖配置；使用 Cloudflare 本身不得列为问题。
+4. **域名前身用途时间线**：`时间/区间 | 来源 | 当时标题/用途 | 变化 | 置信度 | 与当前风险的关系`；无可靠快照时明确写“无法核实”。
+5. **完整阻塞项登记表**：列出上述十四个通道，使用 `已证实阻塞 / 高风险 / 条件项 / 未发现 / 无法从公开面核实 / 不适用`，并给出证据。`未发现`不等于 Google 已确认通过。
+6. **发现表**：`级别 | 性质（官方要求/官方质量信号/条件项/经验建议） | 问题 | 现场证据 | 官方依据 | 修复动作 | 复验方法`。
+7. **优先整改清单**：按依赖关系给出最短可执行顺序；先 P0，再 P1。
+8. **送审前复验**：列出能明确验证完成的检查，不重复整份报告。
+9. **仍需用户确认**：只列后台、账户、流量来源或地域覆盖等无法从公开站点证明的事项。
 
 给每个事实结论附 URL、页面位置、响应状态、可见文本摘要或配置路径。将推断明确写成推断。若没有证据，不下确定结论。
 
@@ -153,4 +157,5 @@ python scripts/domain_history_probe.py example.com --wayback-snapshots 4 --forma
 - 不把 AI 辅助内容本身判违规；判断是否属于批量低价值、复制、误导、无增量或违反搜索垃圾政策的内容。
 - 不把受限制内容直接判为禁止内容；解释它可能获得较少或没有广告需求。
 - 不只检查首页；Google 明确提示可能检查全站页面。
+- 不把使用 Cloudflare、橙云代理、Cloudflare DNS、特定套餐或某个 SSL 模式本身判为风险。只在当前可达性、真实爬虫、连接验证、内容一致性或脚本执行有证据时判级。
 - 不替用户提交申请、删除内容或更改生产站点，除非用户明确要求实施。

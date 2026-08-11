@@ -23,6 +23,16 @@ from urllib.robotparser import RobotFileParser
 
 USER_AGENT = "Mozilla/5.0 (compatible; AdSenseReadinessAudit/1.0; local-policy-audit)"
 MAX_RESPONSE_BYTES = 2_000_000
+CLOUDFLARE_ERROR_STATUSES = frozenset(range(520, 527))
+SELECTED_RESPONSE_HEADERS = (
+    "server",
+    "cf-ray",
+    "cf-cache-status",
+    "cf-mitigated",
+    "content-security-policy",
+    "x-robots-tag",
+    "retry-after",
+)
 SKIP_EXTENSIONS = {
     ".7z", ".avi", ".css", ".csv", ".doc", ".docx", ".epub", ".gif",
     ".gz", ".ico", ".jpeg", ".jpg", ".js", ".json", ".m4a", ".mkv",
@@ -30,6 +40,14 @@ SKIP_EXTENSIONS = {
     ".rar", ".rss", ".svg", ".tar", ".tsv", ".txt", ".wav", ".webm",
     ".webp", ".woff", ".woff2", ".xls", ".xlsx", ".xml", ".zip",
 }
+
+
+def selected_headers(headers: Any) -> dict[str, str]:
+    return {
+        name: value
+        for name in SELECTED_RESPONSE_HEADERS
+        if (value := headers.get(name)) is not None
+    }
 TRUST_PATTERNS = {
     "privacy": ("privacy", "隐私", "私隱", "プライバシー"),
     "about": ("about", "关于", "關於", "简介", "簡介", "私たち"),
@@ -94,6 +112,7 @@ def fetch(url: str, timeout: float) -> dict[str, Any]:
                 "final_url": response.geturl(),
                 "status": response.status,
                 "content_type": content_type,
+                "headers": selected_headers(response.headers),
                 "text": text,
                 "truncated": truncated,
                 "error": None,
@@ -110,6 +129,7 @@ def fetch(url: str, timeout: float) -> dict[str, Any]:
             "final_url": exc.geturl(),
             "status": exc.code,
             "content_type": exc.headers.get_content_type(),
+            "headers": selected_headers(exc.headers),
             "text": text,
             "truncated": False,
             "error": f"HTTP {exc.code}",
@@ -120,10 +140,46 @@ def fetch(url: str, timeout: float) -> dict[str, Any]:
             "final_url": url,
             "status": None,
             "content_type": None,
+            "headers": {},
             "text": "",
             "truncated": False,
             "error": str(getattr(exc, "reason", exc)),
         }
+
+
+def cloudflare_response_evidence(response: dict[str, Any]) -> dict[str, Any]:
+    headers = response.get("headers", {})
+    status = response.get("status")
+    server = headers.get("server", "")
+    cf_ray = headers.get("cf-ray", "")
+    cf_cache_status = headers.get("cf-cache-status", "")
+    cf_mitigated = headers.get("cf-mitigated", "")
+    markers: list[str] = []
+    if "cloudflare" in server.casefold():
+        markers.append("server=cloudflare")
+    if cf_ray:
+        markers.append("cf-ray")
+    if cf_cache_status:
+        markers.append("cf-cache-status")
+    if cf_mitigated:
+        markers.append("cf-mitigated")
+    if status in CLOUDFLARE_ERROR_STATUSES:
+        markers.append(f"cloudflare-52x-status={status}")
+    csp = headers.get("content-security-policy", "")
+    return {
+        "detected": bool(markers),
+        "detection_markers": markers,
+        "server": server or None,
+        "cf_ray": cf_ray or None,
+        "cf_cache_status": cf_cache_status or None,
+        "cf_mitigated": cf_mitigated or None,
+        "challenge_detected": cf_mitigated.casefold() == "challenge",
+        "cloudflare_error_status": status if status in CLOUDFLARE_ERROR_STATUSES else None,
+        "content_security_policy": csp[:4000] or None,
+        "interpretation_note": (
+            "Cloudflare use is not an AdSense issue by itself. Challenge, error, cache, CSP, WAF, bot, redirect, and origin findings require outcome-based review."
+        ),
+    }
 
 
 class PageParser(HTMLParser):
@@ -211,6 +267,7 @@ def page_record(response: dict[str, Any], parser: PageParser | None) -> dict[str
         "content_type": response["content_type"],
         "error": response["error"],
         "truncated": response["truncated"],
+        "cloudflare": cloudflare_response_evidence(response),
     }
     if parser is None:
         return record
@@ -244,6 +301,8 @@ def robots_evidence(origin: str, start_url: str, timeout: float) -> dict[str, An
         "error": response["error"],
         "star_allows_start": None,
         "mediapartners_google_allows_start": None,
+        "google_display_ads_bot_allows_start": None,
+        "cloudflare": cloudflare_response_evidence(response),
     }
     if response["status"] == 200:
         parser = RobotFileParser()
@@ -251,9 +310,11 @@ def robots_evidence(origin: str, start_url: str, timeout: float) -> dict[str, An
         parser.parse(response["text"].splitlines())
         result["star_allows_start"] = parser.can_fetch("*", start_url)
         result["mediapartners_google_allows_start"] = parser.can_fetch("Mediapartners-Google", start_url)
+        result["google_display_ads_bot_allows_start"] = parser.can_fetch("Google-Display-Ads-Bot", start_url)
     elif response["status"] == 404:
         result["star_allows_start"] = True
         result["mediapartners_google_allows_start"] = True
+        result["google_display_ads_bot_allows_start"] = True
     return result
 
 
@@ -272,6 +333,7 @@ def ads_txt_evidence(origin: str, timeout: float) -> dict[str, Any]:
         "content_type": response["content_type"],
         "error": response["error"],
         "google_entries": google_entries,
+        "cloudflare": cloudflare_response_evidence(response),
         "policy_note": "ads.txt is not universally mandatory, but Google strongly recommends it; existing files must authorize the publisher.",
     }
 
@@ -315,6 +377,15 @@ def audit_site(start_url: str, max_pages: int, timeout: float) -> dict[str, Any]
         "content_type": first["content_type"],
         "error": first["error"],
         "https_final": parts.scheme.lower() == "https",
+    }
+    audit["technical"]["cloudflare"] = {
+        "first_response": cloudflare_response_evidence(first),
+        "challenge_urls": [],
+        "cloudflare_error_urls": [],
+        "manual_checks": [
+            "Review actual Mediapartners-Google and Google-Display-Ads-Bot requests in AdSense crawler reports and Cloudflare Security Events or logs; do not trust a spoofed user-agent test as proof.",
+            "Review DNS, SSL/TLS mode, WAF and bot rules, rate limiting, Access, geographic or IP rules, Workers, redirects, cache rules, and origin health when Cloudflare is detected or declared.",
+        ],
     }
     audit["technical"]["robots"] = robots_evidence(origin, final_start, timeout)
     audit["technical"]["ads_txt"] = ads_txt_evidence(origin, timeout)
@@ -383,6 +454,19 @@ def audit_site(start_url: str, max_pages: int, timeout: float) -> dict[str, Any]
     audit["technical"]["adsense_script_pages"] = sum(
         1 for page in audit["pages"] if page.get("adsense_script_detected")
     )
+    audit["technical"]["cloudflare"]["challenge_urls"] = [
+        page.get("final_url") or page.get("url")
+        for page in audit["pages"]
+        if page.get("cloudflare", {}).get("challenge_detected")
+    ]
+    audit["technical"]["cloudflare"]["cloudflare_error_urls"] = [
+        {
+            "url": page.get("final_url") or page.get("url"),
+            "status": page.get("cloudflare", {}).get("cloudflare_error_status"),
+        }
+        for page in audit["pages"]
+        if page.get("cloudflare", {}).get("cloudflare_error_status") is not None
+    ]
     return audit
 
 
@@ -398,6 +482,8 @@ def render_markdown(audit: dict[str, Any]) -> str:
     robots = technical.get("robots", {})
     ads_txt = technical.get("ads_txt", {})
     http_probe = technical.get("http_to_https", {})
+    cloudflare = technical.get("cloudflare", {})
+    first_cloudflare = cloudflare.get("first_response", {})
     scope = audit.get("scope", {})
     lines = [
         "# AdSense technical site probe",
@@ -417,9 +503,23 @@ def render_markdown(audit: dict[str, Any]) -> str:
         f"| robots.txt status | {md_escape(robots.get('status'))} |",
         f"| `*` allowed on start URL | {md_escape(robots.get('star_allows_start'))} |",
         f"| `Mediapartners-Google` allowed on start URL | {md_escape(robots.get('mediapartners_google_allows_start'))} |",
+        f"| `Google-Display-Ads-Bot` allowed on start URL | {md_escape(robots.get('google_display_ads_bot_allows_start'))} |",
         f"| ads.txt status | {md_escape(ads_txt.get('status'))} |",
         f"| Google ads.txt entries | {len(ads_txt.get('google_entries', []))} |",
         f"| Pages with AdSense script signal | {technical.get('adsense_script_pages', 0)} |",
+        "",
+        "## Cloudflare/CDN signals",
+        "",
+        "| Signal | Value |",
+        "|---|---|",
+        f"| Cloudflare detected on first response | {md_escape(first_cloudflare.get('detected'))} |",
+        f"| Detection markers | {md_escape(', '.join(first_cloudflare.get('detection_markers', [])))} |",
+        f"| CF-Ray | {md_escape(first_cloudflare.get('cf_ray'))} |",
+        f"| CF-Cache-Status | {md_escape(first_cloudflare.get('cf_cache_status'))} |",
+        f"| Challenge on first response | {md_escape(first_cloudflare.get('challenge_detected'))} |",
+        f"| Cloudflare error status on first response | {md_escape(first_cloudflare.get('cloudflare_error_status'))} |",
+        f"| Challenged fetched URLs | {len(cloudflare.get('challenge_urls', []))} |",
+        f"| Fetched URLs with Cloudflare 520-526 | {len(cloudflare.get('cloudflare_error_urls', []))} |",
         "",
         "## Fetched pages",
         "",

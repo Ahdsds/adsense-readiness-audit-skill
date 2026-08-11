@@ -26,10 +26,12 @@
 |---|---|---|---|
 | T01 | R | 提交正确 URL，站点已发布且在线。 | 空白测试页、模板站、建设中页面会失败。 |
 | T02 | R | 审核时 AdSense 能在无需密码的情况下访问站点。 | 批准后可为受保护内容配置 crawler login；审核前登录墙是阻塞项。 |
-| T03 | R | robots.txt、WAF、CDN 或地区限制不得阻止 AdSense 抓取工具。 | 同时检查 `Mediapartners-Google` 和通用规则；脚本探测只是近似证据。 |
+| T03 | R | robots.txt、WAF、CDN、Cloudflare Challenge/Access/Bot/地域或 IP 规则不得阻止 AdSense 抓取工具。 | 同时检查 `Mediapartners-Google` 和用于添加站点验证的 `Google-Display-Ads-Bot`；脚本与模拟 User-Agent 只是近似证据，真实请求以后台事件/日志为准。 |
 | T04 | R | 使用 HTTPS 时证书须由认可机构签发，且 HTTP 重定向到 HTTPS。 | 自签名、证书错误或重定向循环是阻塞项。 |
 | T05 | R | 按账户给出的方式连接/验证站点。若用代码，应放在申请站点页面的 `<head>` 与 `</head>` 之间。 | 也可能使用 Search Console 所有权或 ads.txt 方式；以账户界面为准。 |
 | T06 | B/C | ads.txt 非强制但强烈建议；一旦使用，发布商必须被正确列为授权卖方。 | 不得把“没有 ads.txt”单独判为普遍拒审原因。 |
+
+使用 Cloudflare/CDN 本身不是问题。检测到 Cloudflare、挑战或 `520`–`526` 时，按 [cloudflare-cdn.md](cloudflare-cdn.md) 检查公开结果和实际爬虫证据；只在配置造成不可达、验证失败、错误内容、脚本故障或政策问题时判级。
 
 ## 三、内容价值与完整性
 
@@ -128,6 +130,8 @@ AI 辅助创作、WordPress 或其他 CMS、免费主题、同时使用其他广
 - [What to do when your site is not ready to show ads](https://support.google.com/adsense/answer/12176698?hl=en)
 - [AdSense site management](https://support.google.com/adsense/answer/12131223?hl=en)
 - [Fix AdSense crawler issues](https://support.google.com/adsense/answer/2381908?hl=en)
+- [About the AdSense ads crawler](https://support.google.com/adsense/answer/99376?hl=en)
+- [Give access to the AdSense crawler in robots.txt](https://support.google.com/adsense/answer/10532?hl=en)
 - [Google AdSense content and user experience](https://support.google.com/adsense/answer/10015918?hl=en)
 - [Your AdSense account wasn't approved](https://support.google.com/adsense/answer/81904?hl=en)
 - [AdSense Program policies](https://support.google.com/adsense/answer/48182?hl=en)
@@ -143,5 +147,7 @@ AI 辅助创作、WordPress 或其他 CMS、免费主题、同时使用其他广
 - [Spam Policies for Google Web Search](https://developers.google.com/search/docs/essentials/spam-policies)
 - [Manual actions report](https://support.google.com/webmasters/answer/9044175?hl=en)
 - [Google Safe Browsing Site Status](https://transparencyreport.google.com/safe-browsing/search)
+
+Cloudflare 的响应头、错误码和产品行为仅用对应的 Cloudflare 官方文档解释，详见 [cloudflare-cdn.md](cloudflare-cdn.md)；它们不是 Google 政策来源。
 
 引用时链接到支持具体发现的页面，不要只链接变更日志或本文件。
